@@ -1,0 +1,159 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+# AppArmor profile for Firefox (Arch) - Hardened & Categorized
+# Limits system access to prevent damage from a compromised browser.
+# ------------------------------------------------------------------
+
+# --- 1. GLOBAL SETTINGS AND VARIABLES ---
+abi <abi/4.0>,
+include <tunables/global>
+
+@{MOZ_LIBDIR} = /usr/lib/firefox
+@{MOZ_APP_NAME} = firefox{,-esr,-beta,-devedition,-nightly}
+@{MOZ_PATH_PATTERNS} = /{usr/lib/firefox{,-esr,-beta,-devedition,-nightly},opt/firefox}/@{MOZ_APP_NAME}{,-esr,-bin}
+
+# Define the profile applying to various Firefox executable paths
+profile firefox @{MOZ_PATH_PATTERNS} {
+  # Enable user namespaces (essential for Firefox's internal sandboxing)
+  userns,
+
+  # --- 2. ABSTRACTION INCLUDES (Common Services) ---
+  include <abstractions/audio>
+  include <abstractions/base>
+  include <abstractions/cups-client>       # For printing
+  include <abstractions/dbus-session-strict>
+  include <abstractions/dbus-strict>
+  include <abstractions/dconf>
+  include <abstractions/devices-usb-read> # Read-only access to USB devices
+  include <abstractions/fonts>
+  include <abstractions/gnome>
+  include <abstractions/mesa>             # Graphics drivers
+  include <abstractions/nameservice>      # DNS lookups
+  include <abstractions/opencl-pocl>      # Portable OpenCL (if used)
+  include <abstractions/openssl>
+  include <abstractions/p11-kit>          # Cryptographic modules
+  include <abstractions/vulkan>           # Graphics API
+
+  # --- 3. CAPABILITIES AND PTRACE ---
+  # Explicitly deny dangerous capabilities
+  deny capability sys_admin,
+  deny capability sys_chroot,
+  deny capability sys_ptrace,
+
+  # Allow necessary capabilities
+  capability dac_override,
+  capability setgid,
+  capability setuid,
+  capability sys_nice, # Required for UI/Video thread prioritization
+
+  # Allow the crash reporter to trace the main process
+  ptrace trace peer=firefox,
+
+  # --- 4. NETWORKING ---
+  # Allow standard network traffic
+  network inet dgram,
+  network inet stream,
+  network inet6 dgram,
+  network inet6 stream,
+
+  # --- 5. EXECUTION PERMISSIONS (Internal Binaries) ---
+  # Allows execution of main application and helpers, inheriting the policy
+  @{MOZ_LIBDIR}/firefox ix,
+  @{MOZ_LIBDIR}/crashhelper ix,
+  @{MOZ_LIBDIR}/crashreporter ix,
+  @{MOZ_LIBDIR}/glxtest ix,
+  @{MOZ_LIBDIR}/minidump-analyzer ix, # GPU process fallback
+  @{MOZ_LIBDIR}/pingsender ix,
+  @{MOZ_LIBDIR}/plugin-container rix, # Plugin container (legacy)
+  @{MOZ_LIBDIR}/vaapitest ix,
+
+  # Execution of system tools used internally (like bubblewrap for sandboxing)
+  /usr/bin/bwrap mrix,
+
+  # Execution of image/video decoding loaders
+  /usr/lib/glycin-loaders/2+/glycin-image-rs mrix,
+  /usr/lib/glycin-loaders/2+/glycin-svg mrix,
+
+  # --- 6. FILESYSTEM ACCESS (Read/Write) ---
+
+  # Read/Write access to user directories
+  owner @{HOME}/Downloads/** rwk,             # Downloads folder
+  owner @{HOME}/.mozilla/firefox/** rwk,      # Firefox profiles
+  owner @{HOME}/.cache/mozilla/** rwk,        # Firefox cache
+
+  # Specific lock/delete permissions for critical files
+  owner @{HOME}/.mozilla/firefox/**/*.sqlite k,
+  owner @{HOME}/.mozilla/firefox/**/.parentlock k,
+  owner @{HOME}/.mozilla/firefox/**/cert9.db k,
+  owner @{HOME}/.mozilla/firefox/**/key4.db k,
+  owner @{HOME}/.mozilla/firefox/**/permissions.sqlite k,
+
+  # Temporary files
+  /tmp/** rw,
+  /var/tmp/** rw,
+
+  # System/User Configuration Reads
+  /etc/firefox/policies/** r,
+  /etc/gtk-3.0/** r,
+  /etc/ssl/certs/** r,                       # SSL certificates
+  /etc/xdg/** r,
+  @{MOZ_LIBDIR}/distribution/** r,          # Distribution customization
+  /usr/share/glycin-loaders/** r,            # Image/video decoding loaders
+
+  # System/User Config Read for GVFS and Desktop
+  owner @{HOME}/.config/dconf/user r,
+  owner @{HOME}/.config/gtk-3.0/** r,
+  owner @{HOME}/.config/mimeapps.list r,
+  owner @{HOME}/.local/share/gvfs-metadata/ r,
+  owner @{HOME}/.local/share/gvfs-metadata/** r,
+
+  # Broad read access (mitigated by strict 'deny w' rules below)
+  /** r,
+
+  # --- 7. HARDWARE & GPU ACCESS ---
+  /dev/dri/** rw,                             # Direct Rendering Manager (GPU)
+  /usr/share/libdrm/** r,                     # DRM Library files
+
+  # SysFS/ProcFS data for hardware information
+  /sys/devices/**/drm/** r,
+  /sys/devices/**/subsystem_device r,
+  /sys/devices/**/subsystem_vendor r,
+  /sys/devices/**/uevent r,
+  /sys/devices/pci0000:00/0000:00:08.1/0000:04:00.0/ r, # Specific PCI path (often GPU/Sound)
+  /sys/devices/system/cpu/cpu*/cache/index*/size r,
+  /sys/devices/system/cpu/cpu*/topology/core_cpus r,
+  /sys/devices/system/cpu/cpu*/topology/thread_siblings r,
+  /sys/devices/system/cpu/cpufreq/policy*/cpuinfo_max_freq r,
+
+  # GPU shader cache
+  owner @{HOME}/.cache/mesa_shader_cache/** r,
+  owner @{HOME}/.cache/mesa_shader_cache/index rw,
+
+  # --- 8. RUNTIME & PROCESS INFO (/proc, /run) ---
+  owner /proc/*/cmdline r,
+  owner /proc/*/task/ r,
+  owner @{PROC}/@{pid}/cgroup r,
+  owner @{PROC}/@{pid}/fd/ r,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/oom_score_adj w,      # Allow adjusting OOM score
+  owner @{PROC}/@{pid}/smaps r,
+  owner @{PROC}/@{pid}/stat r,
+  owner @{PROC}/@{pid}/statm r,
+
+  # Wayland/D-Bus/PulseAudio Sockets
+  owner /run/user/*/bus rw,
+  owner /run/user/*/dconf/user rw,
+  owner /run/user/*/portal/* rw,
+  owner /run/user/*/pulse/native rw,
+  owner /run/user/*/wayland-*/** rw,
+  owner /run/user/*/wayland-proxy-* w,
+
+  # --- 9. EXPLICIT DENIALS (Security Hardening) ---
+  deny /etc/passwd w,
+  deny /etc/shadow w,
+  deny /etc/sudoers w,
+  deny @{MOZ_LIBDIR}/** w, # Prevent writing to the application binary path
+
+  # --- 10. LOCAL OVERRIDES ---
+  include if exists <local/firefox>
+}

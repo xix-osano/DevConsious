@@ -1,0 +1,42 @@
+# Last Modified: 2025-11-23
+# AppArmor profile for mpv media player
+abi <abi/4.0>,
+
+include <tunables/global>
+
+# -----------------------------------------------------------------
+# MPV Media Player AppArmor Profile
+# Provides basic read access to /tmp, /dev/null, /proc, /sys, etc.
+# ------------------------------------------------------------------
+
+profile mpv /usr/bin/mpv {
+  include <abstractions/base>
+
+  # Allow mpv config
+  /etc/mpv/** r,
+
+  # Home directory access
+  owner @{HOME}/ r,
+  owner @{HOME}/** rwk,  
+
+  # Temporary directories
+  /tmp/** rw,
+  /var/tmp/** rw,
+
+  # Device access
+  /dev/dri/** rw,
+  /dev/snd/** rw,
+  /dev/input/** r,
+  /run/user/** rw,
+
+  # Kernel info – read-only
+  /proc/sys/kernel/* r,
+
+  # Font and icon access
+  /usr/share/fonts/** r,
+  /usr/share/icons/** r,
+
+  # Network if streaming
+  network inet stream,
+  network inet6 stream,
+}

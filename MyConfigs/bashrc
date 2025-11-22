@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+#######################################################
+# Enosh Osano Misonge - Modular Bash Init
+#######################################################
+
+# ---------------------------
+# Check for interactive shell
+# ---------------------------
+if [[ $- != *i* ]]; then
+  return
+fi
+
+# ---------------------------
+# PATH Setup
+# ---------------------------
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$HOME/.local/share/dms-sm-plugin/bin/:$PATH"
+
+# Ensure command hashing is off for mise
+set +h
+
+# ---------------------------
+# XDG Directories
+# ---------------------------
+export XDG_DATA_HOME="$HOME/.local/share"
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_STATE_HOME="$HOME/.local/state"
+export XDG_CACHE_HOME="$HOME/.cache"
+
+# ---------------------------
+# History Settings
+# ---------------------------
+export HISTFILESIZE=10000
+export HISTSIZE=500
+export HISTTIMEFORMAT="%F %T"
+export HISTCONTROL=erasedups:ignoredups:ignorespace
+shopt -s histappend checkwinsize
+PROMPT_COMMAND='history -a'
+
+# ---------------------------
+# Editor & Utilities
+# ---------------------------
+export EDITOR=nvim
+export VISUAL=nvim
+export BAT_THEME=ansi
+
+# ---------------------------
+# Colors for LS & Man
+# ---------------------------
+export CLICOLOR=1
+export LS_COLORS='no=00:fi=00;di=00;34:ln=01;36:pi=40;33:so=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:...'
+
+export LESS_TERMCAP_mb=$'\E[01;31m'
+export LESS_TERMCAP_md=$'\E[01;31m'
+export LESS_TERMCAP_me=$'\E[0m'
+export LESS_TERMCAP_se=$'\E[0m'
+export LESS_TERMCAP_so=$'\E[01;44;33m'
+export LESS_TERMCAP_ue=$'\E[0m'
+export LESS_TERMCAP_us=$'\E[01;32m'
+
+# ---------------------------
+# Bash Completion
+# ---------------------------
+if [[ -f /usr/share/bash-completion/bash_completion ]] && [[ -z $BASH_COMPLETION_VERSINFO ]]; then
+  source /usr/share/bash-completion/bash_completion
+fi
+
+# ---------------------------
+# External Utilities
+# ---------------------------
+if command -v mise &>/dev/null; then
+  eval "$(mise activate bash)"
+fi
+
+if command -v zoxide &>/dev/null; then
+  eval "$(zoxide init bash)"
+fi
+
+# FZF keybindings
+if command -v fzf &>/dev/null; then
+  if [[ -f /usr/share/fzf/completion.bash ]]; then
+    source /usr/share/fzf/completion.bash
+  fi
+  if [[ -f /usr/share/fzf/key-bindings.bash ]]; then
+    source /usr/share/fzf/key-bindings.bash
+  fi
+fi
+
+# ---------------------------
+# Starship Prompt
+# ---------------------------
+if command -v starship &>/dev/null; then
+  eval "$(starship init bash)"
+fi
+
+# ---------------------------
+# Fastfetch
+# ---------------------------
+if [ -f /usr/bin/fastfetch ]; then
+  fastfetch
+fi
+
+# ---------------------------
+# Readline / Input bindings
+# ---------------------------
+# Bell
+bind 'set bell-style visible'
+
+# Case-insensitive completion
+bind 'set completion-ignore-case on'
+
+# Show all matches automatically
+bind 'set show-all-if-ambiguous on'
+bind 'set show-all-if-unmodified on'
+
+# Colored completion stats
+bind 'set colored-stats on'
+
+# Meta key handling (UTF-8 support)
+bind 'set meta-flag on'
+bind 'set input-meta on'
+bind 'set output-meta on'
+bind 'set convert-meta off'
+
+# Optional: Ctrl+f custom binding (example from original)
+bind '"\C-f":"zi\n"'
+
+# History search (up/down like zsh)
+bind '"\e[A": history-search-backward'
+bind '"\e[B": history-search-forward'
+
+# ---------------------------
+# Aliases
+# ---------------------------
+alias cp='cp -i'
+alias mv='mv -i'
+alias mkdir='mkdir -p'
+alias ping='ping -c 10'
+alias less='less -R'
+alias snano='sudo nano'
+alias update-grub='sudo grub-mkconfig -o /boot/grub/grub.cfg'
+alias home='cd ~'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias ls='eza -lh --group-directories-first --icons=auto'
+alias lsa='ls -a'
+alias lt='eza --tree --level=2 --long --icons --git'
+alias lta='lt -a'
+alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
+alias g='git'
+alias gcm='git commit -m'
+alias gcam='git commit -a -m'
+alias gcad='git commit -a --amend'
+
+# ---------------------------
+# ZD / CD Overrides
+# ---------------------------
+zd() {
+  if [ $# -eq 0 ]; then
+    builtin cd ~ && return
+  elif [ -d "$1" ]; then
+    builtin cd "$1"
+  else
+    z "$@" && printf "\U000F17A9 " && pwd || echo "Error: Directory not found"
+  fi
+}
+cd() {
+  if [ -n "$1" ]; then
+    builtin cd "$@" && ls
+  else
+    builtin cd ~ && ls
+  fi
+}
+
+# -------------------------------
+# Format Drive Function
+# -------------------------------
+# Format an entire drive into a single partition (ext4 or FAT32)
+format-drive() {
+  if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+    echo "Usage: format-drive <device> <label> [ext4|fat32]"
+    echo "Example: format-drive /dev/sdb MyDrive ext4"
+    echo -e "\nAvailable drives:"
+    lsblk -d -o NAME,SIZE,MODEL | awk '{print "/dev/"$1" - "$2" "$3}'
+    return 1
+  fi
+
+  local device="$1"
+  local label="$2"
+  local fstype="${3:-ext4}" # default to ext4 if not specified
+  local part
+
+  if [[ "$fstype" != "ext4" && "$fstype" != "fat32" ]]; then
+    echo "Error: Filesystem type must be either 'ext4' or 'fat32'."
+    return 1
+  fi
+
+  echo "WARNING: This will ERASE ALL DATA on $device and format it as $fstype labeled '$label'."
+  read -rp "Are you sure you want to continue? (y/N): " confirm
+  [[ "$confirm" =~ ^[Yy]$ ]] || return 0
+
+  set -e
+  trap 'echo "Error: Formatting failed. Drive may be partially modified."' ERR
+
+  echo "→ Wiping existing signatures..."
+  sudo wipefs -a "$device"
+  sudo dd if=/dev/zero of="$device" bs=1M count=100 status=progress || true
+
+  echo "→ Creating new GPT partition table..."
+  sudo parted -s "$device" mklabel gpt
+  sudo parted -s "$device" mkpart primary "$fstype" 1MiB 100%
+
+  part="$([[ $device == *"nvme"* ]] && echo "${device}p1" || echo "${device}1")"
+
+  echo "→ Formatting $part as $fstype..."
+  case "$fstype" in
+  ext4)
+    sudo mkfs.ext4 -L "$label" "$part"
+    ;;
+  fat32)
+    sudo mkfs.vfat -F32 -n "$label" "$part"
+    ;;
+  esac
+
+  sync
+  echo "✅ Drive formatted as $fstype, labeled '$label'."
+}
+
+# -------------------------------
+# Python environment activation
+# -------------------------------
+# Function to activate Python virtual environments cleanly for Starship
+venv() {
+  # Check if a path was provided
+  if [ -n "$1" ]; then
+    # Run the source command and force the overall exit code to 0 with '&& true'
+    source "$1/bin/activate" 2>/dev/null
+    true
+  else
+    echo "Usage: venv <path_to_venv>"
+  fi
+}
+
+# ---------------------------
+# Open files
+# ---------------------------
+open() { xdg-open "$@" >/dev/null 2>&1 & }
+
+# ---------------------------
+# IP lookup
+# ---------------------------
+get_local_ip() {
+  ip route get 1.1.1.1 2>/dev/null | awk '{print $7}'
+}
+
+whatsmyip() {
+  echo -n "Internal IP: "
+  get_local_ip
+  echo -n "External IP: "
+  curl -4 ifconfig.me 2>/dev/null
+}
+alias whatismyip="whatsmyip"
+
+# ---------------------------
+# Auto-start X only if no DM is running
+# ---------------------------
+if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]] && ! pgrep -x sddm >/dev/null; then
+  exec startx
+fi

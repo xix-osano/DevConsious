@@ -1,0 +1,91 @@
+# Last Modified: Sun Nov 23 00:33:58 2025
+abi <abi/4.0>,
+
+include <tunables/global>
+
+# Telegram Desktop – Clean Hardened Profile (Complain Mode)
+
+
+profile telegram-desktop /usr/bin/Telegram {
+  include <abstractions/audio>
+  include <abstractions/base>
+  include <abstractions/bash>
+  include <abstractions/consoles>
+  include <abstractions/dbus-session>
+  include <abstractions/dbus>
+  include <abstractions/dconf>
+  include <abstractions/gnome>
+  include <abstractions/nameservice>
+ # include <abstractions/opencl-pocl>
+  include <abstractions/ssl_certs>
+  include <abstractions/ubuntu-browsers.d/multimedia>
+  include if exists <local/telegram-desktop>
+
+  deny capability sys_admin,
+  deny capability sys_chroot,
+  deny capability sys_ptrace,
+
+  capability sys_nice,
+
+  network inet dgram,
+  network inet stream,
+  network inet6 dgram,
+  network inet6 stream,
+
+  deny /etc/passwd w,
+  deny /etc/shadow w,
+  deny /etc/sudoers w,
+
+  /dev/dri/** r,
+  /etc/pipewire/*/ r,
+  /proc/sys/kernel/* r,
+  /sys/class/** r,
+  /sys/devices/**/drm/** r,
+  /sys/devices/virtual/dmi/id/* r,
+  /tmp/** rw,
+  /usr/bin/Telegram mrix,
+  /usr/bin/bash ix,
+  /usr/bin/bwrap mrix,
+  /usr/bin/cut mrix,
+  /usr/bin/dbus-send mrix,
+  /usr/bin/env mrix,
+  /usr/bin/grep mrix,
+  /usr/bin/printf mrix,
+  /usr/bin/sed mrix,
+  /usr/bin/uname mrix,
+  /usr/bin/xdg-mime mrix,
+  /usr/bin/xdg-open rix,
+  /usr/bin/xprop mrix,
+  /usr/lib/** r,
+  /usr/lib/glycin-loaders/2+/glycin-image-rs mrix,
+  /usr/lib/glycin-loaders/2+/glycin-svg mrix,
+  /usr/share/** r,
+  /var/tmp/** rw,
+  owner "/home/*/Documents/My Docs/*" r,
+  owner /home/*/** rwk,
+  owner /home/*/.cache/thumbnails/fail/gnome-thumbnail-factory/* r,
+  owner /home/*/.config/* rwl,
+  owner /proc/*/* r,
+  owner /run/user/** rwk,
+  owner /run/user/*/bus rw,
+  owner /run/user/*/dconf/user rw,
+  owner /run/user/*/doc/** rw,
+  owner /run/user/*/portal/* rw,
+  owner /run/user/*/pulse/native rw,
+  owner /run/user/*/wayland-*/** rw,
+  owner @{HOME}/.cache/TelegramDesktop/ rwk,
+  owner @{HOME}/.cache/TelegramDesktop/** rwk,
+  owner @{HOME}/.cache/mesa_shader_cache/** rw,
+  owner @{HOME}/.config/TelegramDesktop/ rwk,
+  owner @{HOME}/.config/TelegramDesktop/** rwk,
+  owner @{HOME}/.config/dconf/* r,
+  owner @{HOME}/.local/share/TelegramDesktop/ rwk,
+  owner @{HOME}/.local/share/TelegramDesktop/* l,
+  owner @{HOME}/.local/share/TelegramDesktop/** rwk,
+  owner @{HOME}/Downloads/** rwk,
+  owner @{PROC}/@{pid}/oom_score_adj w,
+  owner @{PROC}/@{pid}/smaps r,
+  owner @{PROC}/@{pid}/stat r,
+  owner @{PROC}/@{pid}/status r,
+
+}

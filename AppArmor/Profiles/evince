@@ -1,0 +1,69 @@
+# Last Modified: Sun Nov 23 00:55:55 2025
+abi <abi/4.0>,
+
+include <tunables/global>
+
+# ------------------------------------------------------------------
+# Evince PDF/Document Viewer AppArmor profile
+# Allows glycin, bwrap, icons, fonts, dconf, GVFS, and documents.
+# ------------------------------------------------------------------
+
+
+profile evince /usr/bin/evince {
+  include <abstractions/audio>
+  include <abstractions/base>
+  include <abstractions/cups-client>
+  include <abstractions/dbus-session>
+  include <abstractions/dbus>
+  include <abstractions/fonts>
+  include <abstractions/gnome>
+  include <abstractions/nameservice>
+  include if exists <local/evince>
+
+  deny capability sys_admin,
+  deny capability sys_chroot,
+  deny capability sys_ptrace,
+
+  capability sys_nice,
+
+  network inet stream,
+
+  ptrace trace peer=evince,
+
+  deny /etc/passwd w,
+  deny /etc/shadow w,
+  deny /etc/sudoers w,
+  deny owner @{HOME}/.config/** w,
+  deny owner @{HOME}/.local/share/** w,
+
+  /etc/** r,
+  /etc/fonts/** r,
+  /etc/mime.types r,
+  /nix/store/** r,
+  /proc/sys/kernel/* r,
+  /tmp/** rw,
+  /usr/** r,
+  /usr/bin/bwrap rix,
+  /usr/bin/evince rix,
+  /usr/lib/gio-launch-desktop mrix,
+  /usr/lib/glycin-loaders/** rix,
+  /usr/lib/gnome-terminal/gnome-terminal-server rix,
+  /usr/share/** r,
+  /usr/share/icons/** r,
+  /var/tmp/** rw,
+  owner /home/*/.local/share/gvfs-metadata/** rwk,
+  owner /home/*/Documents/** r,
+  owner /run/user/1000/dconf/** rw,
+  owner /tmp-home/** rw,
+  owner /tmp-run/** rw,
+  owner /var/cache/fontconfig/** r,
+  owner @{HOME}/.cache/evince/** rwk,
+  owner @{HOME}/.cache/fontconfig/** r,
+  owner @{HOME}/.cache/glycin/** rwix,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/oom_score_adj w,
+  owner @{PROC}/@{pid}/smaps r,
+  owner @{PROC}/@{pid}/stat r,
+  owner @{PROC}/@{pid}/status r,
+
+}
