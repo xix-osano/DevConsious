@@ -1,42 +1,86 @@
 # Last Modified: 2025-11-23
-# AppArmor profile for mpv media player
 abi <abi/4.0>,
 
 include <tunables/global>
 
 # -----------------------------------------------------------------
 # MPV Media Player AppArmor Profile
-# Provides basic read access to /tmp, /dev/null, /proc, /sys, etc.
+# Provides read/write access to /tmp, /proc, /sys, etc.
+# Supports hardware decoding, PipeWire, Thumbfast thumbnails.
 # ------------------------------------------------------------------
 
+# AppArmor profile for mpv media player
 profile mpv /usr/bin/mpv {
   include <abstractions/base>
+  include <abstractions/audio>
+  include <abstractions/consoles>
+  include <abstractions/dbus-session-strict>
+  include <abstractions/dri-common>
+  include <abstractions/fonts>
+  include <abstractions/mesa>
+  include <abstractions/vulkan>
 
-  # Allow mpv config
-  /etc/mpv/** r,
+  # Networking for streaming
+  network inet stream,
+  network inet6 stream,
 
-  # Home directory access
-  owner @{HOME}/ r,
-  owner @{HOME}/** rwk,  
+  # Basic device access
+  /dev/dri/** rw,
+  /dev/snd/** rw,
+  /dev/input/** r,
+  
+  # GPU & DRM
+  /sys/class/drm/** r,
+  /sys/devices/**/drm/** r,
+  /proc/sys/kernel/* r,
+  /proc/sys/kernel/random/* r,
+
+  # User runtime
+  /run/user/** rw,
+  owner /run/user/*/pulse/native rw,
+  owner /run/user/*/wayland-*/** rw,
+  owner /run/user/*/bus rw,
+  owner /run/user/*/doc/** rw,
+  owner /run/user/*/portal/* rw,
 
   # Temporary directories
   /tmp/** rw,
   /var/tmp/** rw,
 
-  # Device access
-  /dev/dri/** rw,
-  /dev/snd/** rw,
-  /dev/input/** r,
-  /run/user/** rw,
-
-  # Kernel info – read-only
-  /proc/sys/kernel/* r,
-
-  # Font and icon access
+  # Fonts & icons
   /usr/share/fonts/** r,
   /usr/share/icons/** r,
 
-  # Network if streaming
-  network inet stream,
-  network inet6 stream,
+  # mpv config
+  /etc/mpv/** r,
+  /etc/libva.conf r,
+  /etc/nsswitch.conf r,
+  /etc/pipewire/client.conf.d/ r,
+
+  # Home access 
+  # Only allow mpv configs and videos directory to be written
+  owner @{HOME}/.config/mpv/** rwk,
+  owner @{HOME}/Videos/** rwk,
+  owner @{HOME}/Downloads/** r,
+  owner @{HOME}/.local/state/mpv/** rwk,
+  owner @{HOME}/*/.cache/mpv/ r,
+
+  owner @{HOME}/ r,  # read-only for general files
+
+  # mpv executable & helper binaries
+  /usr/bin/mpv mrix,
+  /usr/bin/chmod mrix,
+  /usr/bin/bash ix,
+  /usr/bin/tail rix,
+  /usr/bin/env mrix,
+  /usr/bin/grep mrix,
+  /usr/bin/printf mrix,
+  /usr/bin/sed mrix,
+  /usr/bin/uname mrix,
+  /usr/bin/xdg-mime mrix,
+  /usr/bin/xdg-open rix,
+  /usr/bin/xprop mrix,
+
+  # Thumbfast helper scripts
+  /tmp/thumbfast*.run mrix,
 }

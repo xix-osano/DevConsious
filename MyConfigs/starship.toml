@@ -121,52 +121,52 @@ format = '[╭─ ](bold fg:green)[󰪢 $duration](bold bg:green fg:black)[�
 [c]
 symbol = " "
 style = "bg:cyan fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol ($version) ]($style)[](bold fg:cyan)'
+format = '󰜥 [](bold fg:cyan)[ $symbol ($version) ]($style)[](bold fg:cyan)'
 
 [docker_context]
 symbol = " "
 style = "bg:green fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol $context ]($style)$path[](bold fg:green)'
+format = '󰜥 [](bold fg:cyan)[ $symbol $context ]($style)$path[](bold fg:cyan)'
 
 [elixir]
 symbol = " "
 style = "bg:cyan fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol ($version) ]($style)[](bold fg:cyan)'
+format = '󰜥 [](bold fg:cyan)[ $symbol ($version) ]($style)[](bold fg:cyan)'
 
 [elm]
 symbol = " "
 style = "bg:cyan fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol ($version) ]($style)[](bold fg:cyan)'
+format = '󰜥 [](bold fg:cyan)[ $symbol ($version) ]($style)[](bold fg:cyan)'
 
 [golang]
 symbol = " "
 style = "bg:cyan fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol ($version) ]($style)[](bold fg:cyan)'
+format = '󰜥 [](bold fg:cyan)[ $symbol ($version) ]($style)[](bold fg:cyan)'
 
 [haskell]
 symbol = " "
 style = "bg:cyan fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol ($version) ]($style)[](bold fg:cyan)'
+format = '󰜥 [](bold fg:cyan)[ $symbol ($version) ]($style)[](bold fg:cyan)'
 
 [java]
 symbol = " "
 style = "bg:cyan fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol ($version) ]($style)[](bold fg:cyan)'
+format = '󰜥 [](bold fg:cyan)[ $symbol ($version) ]($style)[](bold fg:cyan)'
 
 [julia]
 symbol = " "
 style = "bg:cyan fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol ($version) ]($style)[](bold fg:cyan)'
+format = '󰜥 [](bold fg:cyan)[ $symbol ($version) ]($style)[](bold fg:cyan)'
 
 [nodejs]
 symbol = ""
 style = "bg:cyan fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol ($version) ]($style)[](bold fg:cyan)'
+format = '󰜥 [](bold fg:cyan)[ $symbol ($version) ]($style)[](bold fg:cyan)'
 
 [nim]
 symbol = " "
 style = "bg:cyan fg:black"
-format = '󰜥 [](bold fg:green)[ $symbol ($version) ]($style)[](bold fg:cyan)'
+format = '󰜥 [](bold fg:cyan)[ $symbol ($version) ]($style)[](bold fg:cyan)'
 
 [python]
 style = "bg:green fg:black"
